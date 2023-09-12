@@ -5,13 +5,6 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 import numpy as np
 initialize_quibbler()
-%matplotlib tk
-@quiby
-def norm(x, b) -> np.ndarray:
-    """
-    Takes a matrix with points and return a matrix with the norm of each point
-    """
-    return np.linalg.norm(x, axis=2) * b
 
 # Figure setup:
 plt.figure()
@@ -23,9 +16,9 @@ x = np.linspace(-10, 10, 10000)
 y = q(np.sin, a*x + b)
 
 plt.plot(x, y)
-ax = plt.axes([0.3, 0.8, 0.3, 0.03])
-Slider(ax=ax, valmin=-10, valmax=10, valinit=a, valstep=1, label='a');
-ax = plt.axes([0.3, 0.7, 0.3, 0.03])
-Slider(ax=ax, valmin=-10, valmax=10, valinit=b, valstep=1, label='b');
+# ax = plt.axes([0.3, 0.8, 0.3, 0.03])
+# Slider(ax=ax, valmin=-10, valmax=10, valinit=a, valstep=1, label='a');
+# ax = plt.axes([0.3, 0.7, 0.3, 0.03])
+# Slider(ax=ax, valmin=-10, valmax=10, valinit=b, valstep=1, label='b');
 plt.show()
 # %%

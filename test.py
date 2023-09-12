@@ -5,13 +5,6 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 import numpy as np
 initialize_quibbler()
-%matplotlib tk
-@quiby
-def norm(x, b) -> np.ndarray:
-    """
-    Takes a matrix with points and return a matrix with the norm of each point
-    """
-    return np.linalg.norm(x, axis=2) * b
 
 # Figure setup:
 plt.figure()
@@ -38,4 +31,6 @@ plt.show()
 print(Z.shape)
 # %%
 b=90
+print(b+1)
+print(b/2+1)
 # %%
