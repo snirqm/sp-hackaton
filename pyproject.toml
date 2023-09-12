@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "sp-hackaton"
+version = "0.1.0"
+description = ""
+authors = ["Snir Bachar <snir@quantum-machines.co>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.11"
+qm-qua = "^1.1.4"
+pyquibbler = "^0.2.8"
+torch = "^2.0.1"
+numba = "^0.57.1"
+pyquibbler-labextension = "^0.2.8"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.9.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
