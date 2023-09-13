@@ -17,6 +17,14 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
+def average_image(current_image, new_image, num_of_frames_till_now):
+    if num_of_frames_till_now == 0:
+        not_first_image = 0
+    else:
+        not_first_image = 1
+    return ((not_first_image * current_image * num_of_frames_till_now + new_image) / (num_of_frames_till_now + 1))
+
+
 resolution = 1
 VP1 = np.arange(0, 115, resolution)
 VP2 = np.arange(0, 115, resolution)
@@ -29,8 +37,7 @@ def make_line(start=(), end=()):
     slope = (y1-y0) / (x1-x0)
     return start, end, slope
 
-def make_diamond(start=(), diag_step1=0, diag_step2=0, hor_step=0):
-    lines = []
+def make_diamond(start=(), diag_step1=0, diag_step2=0, hor_step=0, label="(0,0)"):
     x0 = start[0]; y0 = start[1]
     slope = -int(diag_step2 / diag_step1 * diag_step2)
     lines = [make_line((x0, y0), (x0 - diag_step1, y0 + diag_step2)),
@@ -41,126 +48,91 @@ def make_diamond(start=(), diag_step1=0, diag_step2=0, hor_step=0):
              make_line((x0 + diag_step2 + hor_step, y0 + slope+hor_step), (x0 + diag_step2+hor_step - diag_step1, y0 + slope+hor_step + diag_step2)),
              make_line((x0 + diag_step2 + hor_step + slope, y0 + slope+hor_step + diag_step2), (x0 + diag_step2 + 2*hor_step + slope, y0 + slope+hor_step + diag_step2+hor_step)),
              ]
-    return lines
-
-def average_image(current_image, new_image, num_of_frames_till_now):
-    if num_of_frames_till_now == 0:
-        not_first_image = 0
-    else:
-        not_first_image = 1
-    return ((not_first_image * current_image * num_of_frames_till_now + new_image) / (num_of_frames_till_now + 1))
+    return lines, label
 
 
-x0 = 20
-y0 = 30
 
-diag1 = 30
-diag2 = 15
-hor = 5
-
-blur = 1
-noise_level = 0.1
-
-step = diag2+2*hor+int(-diag2**2/diag1)
-regions = [
-    make_diamond((x0, y0), diag1, diag2, hor),
-    make_diamond((x0+step, y0+step), diag1, diag2, hor),
-    make_diamond((x0+2*step, y0+2*step), diag1, diag2, hor),
-    make_diamond((x0+3*step, y0+3*step), diag1, diag2, hor),
-
-    make_diamond((x0+step, y0), diag1, diag2, hor),
-    make_diamond((x0+2*step, y0), diag1, diag2, hor),
-    make_diamond((x0+3*step, y0), diag1, diag2, hor),
-    make_diamond((x0+4*step, y0), diag1, diag2, hor),
-
-    make_diamond((x0+step, y0), diag1, diag2, hor),
-    # make_diamond((x0+4*step+hor/2, y0+5*step/2-2*hor), diag1, diag2, hor),
-    # make_diamond((x0+3*step+hor/2, y0+3*step/2-2*hor), diag1, diag2, hor),
-    # make_diamond((x0+2*step+hor/2, y0+step/2-2*hor), diag1, diag2, hor),
-    # make_diamond((x0+1*step+hor/2, y0-step/2-2*hor), diag1, diag2, hor),
-]
-
-stability_map = np.zeros((len(VP1), len(VP2)))
-for i in range(len(VP1)):
-    for j in range(len(VP2)):
-        if (5 <= VP1[i] <= 130) and (5 <= VP2[j] <= 130):
-            for region in regions:
-                for line in region:
-                    start, end, slope = line
-                    if min(start[0], end[0]) <= VP1[i] <=  max(start[0], end[0]) and min(start[1], end[1]) <= VP2[j] <= max(start[1], end[1]):
-                        if np.isclose(VP1[i], start[0] + int(slope * (VP2[j]-start[1]))) or slope == 0:
-                            stability_map[i][j] = 1
-
-        else:
-            stability_map[i][j] = main_offset
-
-for i in range(len(VP1)):
-    for j in range(len(VP2)):
-        if stability_map[i][j] == 1 and 0<i<len(VP1) and 0<i<len(VP2):
-            for ii in range(1,blur+1):
-                for jj in range(1,blur+1):
-                    stability_map[i+ii][j+jj] = 1-1/np.sqrt((ii+jj))
-                    stability_map[i-ii][j-jj] = 1-1/np.sqrt((ii+jj))
-                    stability_map[i+ii][j-jj] = 1-1/np.sqrt((ii+jj))
-                    stability_map[i-ii][j+jj] = 1-1/np.sqrt((ii+jj))
+for device in range(1):
+    diag1 = int(np.random.uniform(40, 80))
+    diag2 = int(np.random.uniform(15, diag1/2))
+    hor = int(np.random.uniform(1, diag2/2))
+    blur = int(np.random.uniform(1, 4))
+    for realization in range(1):
+        x0 = int(np.random.uniform(10, 50))
+        y0 = int(np.random.uniform(15, 65))
+        noise_level = np.random.uniform(0.0, 0.5)
+        parameters = f"diag1_{diag1}_diag2_{diag2}_hor_{hor}_width_{blur}_noise_{int(noise_level*1000)}_x0_{x0}_y0_{y0}"
+        # x0 = 20  # position of the first diamond along VP1
+        # y0 = 50  # position of the first diamond along VP2
+        # noise_level = 0.25  # Global noise level
+        # diag1 = 30  # length of one diamond edge
+        # diag2 = 15  # length of the second diamond edge
+        # hor = 10  # length of the linking two diamonds
+        # blur=1  # width of the transition lines
+        start_time = time.time()
+        # Create the diamonds
+        slope = int(-diag2 / diag1 * diag2)
+        step = diag2 + 2*hor + slope
+        regions = []
+        labels = []
+        for j in range(-1,10):
+            for i in range(10):
+                if ((x0 + i*step) < max(VP1)) and ((y0 + i*step) < max(VP2)):
+                    x = x0 + i*step + j*(diag2 - slope)
+                    y = y0 + i*step + j*(slope - diag2)
+                    if (j+i) >= 0 and (i-j+1) >= 0:
+                        diamond, label = make_diamond((x, y), diag1, diag2, hor, label=f"({-j+i+1},{i+j+1})")
+                        labels.append([x + (step - hor) / 2, y + (step - hor) / 2, f"({j + i},{i - j + 1})"])
+                        regions.append(diamond)
+                    if (j+i) >= 0 and (i-j+2) >= 0:
+                        diamond2, label2 = make_diamond((x + step/2 + (slope-diag2)/2, y + step/2 - (slope-diag2)/2), diag1, diag2, hor, label=f"({-j+i+2},{i+j+1})")
+                        labels.append([x + (step - hor) / 2 + step / 2 + (slope - diag2) / 2,
+                                       y + (step - hor) / 2 + step / 2 - (slope - diag2) / 2,
+                                       f"({j + i},{i - j + 2})"])
+                        regions.append(diamond2)
 
 
-for i in range(len(VP1)):
-    for j in range(len(VP2)):
-        noise = np.random.normal(0, noise_level, 1)
-        stability_map[i][j] += noise
+        # Create the stability map
+        stability_map = np.zeros((len(VP1), len(VP2)))
+        bit_map = np.zeros((len(VP1), len(VP2)))
 
-plt.figure()
-plt.subplot(121)
-plt.pcolor(VP2, VP1, stability_map)
-plt.axis("equal")
-plt.xlabel("VP2")
-plt.ylabel("VP1")
-plt.title("Python input")
+        diamond_counter = 0
+        for region in regions:
+            bit_map1 = np.zeros((len(VP1), len(VP2)))
+            line_counter = 0
+            label = labels[diamond_counter]
+            diamond_counter += 1
+            for line in region:
+                line_counter += 1
+                start, end, slope = line
+                for i in range(len(VP1)):
+                    for j in range(len(VP2)):
+                        if min(start[0], end[0]) <= VP1[i] <= max(start[0], end[0]) and min(start[1], end[1]) <= VP2[
+                            j] <= max(start[1], end[1]):
+                            if np.isclose(VP1[i], start[0] + int(slope * (VP2[j] - start[1]))) or slope == 0:
+                                stability_map[i][j] = 1
+                                bit_map[i][j] = 1
+                                if line_counter < len(region):
+                                    bit_map1[i][j] = 1
 
-
-###################
-# The QUA program #
-###################
-# with program() as realtime_prog:
-#     vp1 = declare(fixed, value=VP1)
-#     vp2 = declare(fixed, value=VP2)
-#     start_end0 = declare(int, size=2)
-#     start_end1 = declare(int, size=2)
-#     path = declare(fixed)
-#     start0 = declare(fixed, value=starts0)
-#     end0 = declare(fixed, value=ends0)
-#     start1 = declare(fixed, value=starts1)
-#     end1 = declare(fixed, value=ends0)
-#
-#
-#     I = declare(fixed)
-#     a = declare(fixed)
-#     i = declare(int)
-#     j = declare(int)
-#     k = declare(int)
-#     I_st = declare_stream()
-#     with for_(i, 0, i < len(VP1), i + 1):
-#         with for_(j, 0, j < len(VP2), j + 1):
-#             assign(start_end0[0], start0)
-#             assign(start_end0[1], end0)
-#             assign(start_end1[0], start1)
-#             assign(start_end1[1], end1)
-#             with for_(k, 0, k < len(lines), k + 1):
-#
-#                 with if_( (Math.min(start_end0) <= vp1[i]) & (Math.max(start_end0) >= vp1[i]) & (Math.min(start_end1) <= vp2[j]) & (Math.max(start_end1) >= vp2[j])):
-#                     assign(path,  slope * (vp2[j] - start_end1[0]))
-#                     with if_(vp1[i] == path):
-#                         assign(a, 1)
-#                     with else_():
-#                         assign(a, 0)
-#             measure("readout"*amp(a), "digitizer", None, integration.full("cos", I, "out1"))
-#             save(I, I_st)
-#             wait(25)
-#     with stream_processing():
-#         I_st.buffer(len(VP2)).buffer(len(VP1)).save("map")
-
-
+        # Broaden the lines and add noise to each mixel
+        for i in range(len(VP1)):
+            for j in range(len(VP2)):
+                if stability_map[i][j] == 1 and 0<i<len(VP1)-3 and 0<j<len(VP2)-3:
+                    for ii in range(0,blur):
+                        for jj in range(0,blur):
+                            if ii+jj == 0:
+                                stability_map[i+ii][j+jj] = 1
+                            else:
+                                stability_map[i+ii][j+jj] = 1-(ii+jj)/4
+                                stability_map[i-ii][j-jj] = 1-(ii+jj)/4
+                                stability_map[i+ii][j-jj] = 1-(ii+jj)/4
+                                stability_map[i-ii][j+jj] = 1-(ii+jj)/4
+                            noise = np.random.normal(0, noise_level, 1)[0]
+                            stability_map[i][j] += noise
+                else:
+                    noise = np.random.normal(0, noise_level, 1)[0]
+                    stability_map[i][j] += noise
 
 
 #####################################
@@ -177,6 +149,8 @@ run = True
 with program() as hello_qua:
     stab_map = declare(fixed, value=np.concatenate(stability_map))
     r = Random()
+    dx = declare(int)
+    dy = declare(int)
     I = declare(fixed)
     a = declare(fixed)
     l = declare(int)
@@ -184,14 +158,14 @@ with program() as hello_qua:
     j = declare(int)
     I_st = declare_stream()
     l_st = declare_stream()
-    with for_(l, 0, l < 1000, l + 1):  # repeat for avearging
+    with for_(l, 0, l < 100000, l + 1):  # repeat for averaging
         save(l, l_st)
         with for_(i, 0, i < len(VP1), i + 1):
             with for_(j, 0, j < len(VP2), j + 1):
                 assign(a, stab_map[j + len(VP2) * i])
-                measure("readout"*amp(a+r.rand_fixed()*0.5), "digitizer", None, integration.full("cos", I, "out1"))
+                measure("readout"*amp(a+r.rand_fixed()*0.2), "digitizer", None, integration.full("cos", I, "out1"))
                 save(I, I_st)
-                wait(200//4)
+                wait(400//4)
     with stream_processing():
         I_st.buffer(len(VP2)).buffer(len(VP1)).save("map")
         l_st.save("frame_num")
@@ -203,27 +177,23 @@ if run:
     job = qm.execute(hello_qua)
     results = fetching_tool(job, data_list=["map", "frame_num"], mode="live")
     frame_num = []
+    start = time.time()
+    count = 0
+    frame_num_prev = 0
     while results.is_processing():
-        start = time.time()
+        count += 1
         stab_map, frame_num_temp = results.fetch_all()
-        print(f"fetching: {time.time() - start} s")
-    # traditional live plot
-    #     start = time.time()
-        frame_num.append(frame_num_temp)
-        # plt.subplot(122)
-        # plt.cla()
-        # plt.pcolor(VP2, VP1, stab_map)
-        # plt.axis("equal")
-        # plt.title(f"OPX acquisition {frame_num[-1]}")
-        # plt.xlabel("VP2")
-        # plt.ylabel("VP1")
-        # plt.tight_layout()
-        print(f"plotting: {time.time() - start} s")
-        start = time.time()
-        plt.pause(0.001)
-        print(f"waiting: {time.time() - start} s")
+        if frame_num_prev < frame_num_temp:
+            plt.cla()
+            plt.pcolor(VP2, VP1, stab_map)
+            plt.axis("equal")
+            plt.title(f"plotting: {count/(time.time()-start):.1f} fps, streaming: {frame_num_temp/(time.time()-start):.1f} fps")
+            plt.xlabel("VP2")
+            plt.ylabel("VP1")
+            plt.tight_layout()
+            plt.pause(0.001)
+        frame_num_prev = frame_num_temp
 
-print(len(frame_num))
 # New plotting tool
 #
 #     enable_avarage = 1
