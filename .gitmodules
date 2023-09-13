@@ -1,0 +1,3 @@
+[submodule "lightning-sam"]
+	path = lightning-sam
+	url = https://github.com/luca-medeiros/lightning-sam
