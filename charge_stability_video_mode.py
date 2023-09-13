@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from qualang_tools.results import fetching_tool
 import cv2
+import matplotlib.pyplot as plt
 import time
 
 
@@ -40,12 +41,14 @@ def make_diamond(start=(), diag_step1=0, diag_step2=0, hor_step=0):
              ]
     return lines
 
-def average_image(current_image, new_image, num_of_frames_till_now):
-    if num_of_frames_till_now == 0:
-        not_first_image = 0
-    else:
-        not_first_image = 1
-    return ((not_first_image * current_image * num_of_frames_till_now + new_image) / (num_of_frames_till_now + 1))
+def average_voltage(voltage_mat, new_voltage_mat, num_of_frames_till_now):
+    return ((voltage_mat * num_of_frames_till_now + new_voltage_mat) / (num_of_frames_till_now + 1))
+
+def convert_voltage_to_image(voltages):
+    colormap = plt.get_cmap("viridis")
+    normalized_voltages = (voltages - voltages.min()) / (voltages.max() - voltages.min())
+    return (colormap(normalized_voltages) * 255).astype(np.uint8)
+
 
 
 x0 = 20
@@ -219,7 +222,7 @@ if run:
 
     enable_avarage = 1
     # Set the desired frame rate (e.g., 10 frames per second)
-    desired_frame_rate = 1
+    desired_frame_rate = 10
     frame_delay = int(1000 / desired_frame_rate)  # Calculate delay in milliseconds
 
     # Initialize variables for FPS calculation
@@ -227,22 +230,22 @@ if run:
     frame_count = [0]  # Use a list to store frame_count as a mutable object
     fps = 0
 
-
     # Create a function to generate and return random 100x100 RGB images
 
     while results.is_processing():
-        new_image, frame_num_temp = results.fetch_all()
-        if frame_count[0] == 0:
-            image = new_image
-        if enable_avarage:
-            image = average_image(image, new_image, frame_count[0])
+        new_voltage_mat, frame_num_temp = results.fetch_all()
+        
+        if enable_avarage and frame_count[0] != 0:
+            voltage_mat = average_voltage(voltage_mat, new_voltage_mat, frame_count[0])
         else:
-            image = new_image
+            voltage_mat = new_voltage_mat
 
+        image = convert_voltage_to_image(voltage_mat)
+
+        print(image)
         # Add FPS text overlay on the image
         fps_text = f"FPS: {fps:.2f}"
-        cv2.putText(image, fps_text, (1, 10), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 0),
-                    1)  # Adjust the position, font, and size
+        cv2.putText(image, fps_text, (1, 10), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 0), 1)  # Adjust the position, font, and size
 
         # Display the image
         cv2.namedWindow("Random Image", cv2.WINDOW_NORMAL)  # Create a resizable window
@@ -254,6 +257,7 @@ if run:
         elapsed_time = current_time - start_time
         if elapsed_time != 0:
             fps = frame_count[0] / elapsed_time
+        print(f"frame: {frame_count[0]:d}")
         print(elapsed_time)
 
         # Introduce a delay to achieve the desired frame rate

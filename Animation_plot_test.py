@@ -43,7 +43,7 @@ def animate(frame):
     elapsed_time = current_time - start_time
     fps = frame_count[0] / elapsed_time
     # print(f"frame_count: {frame_count[0]:d}")
-    # print(f"current_time: {current_time:.2f}")
+    # print(f"current_time: {cqurrent_time:.2f}")
     # print(f"FPS: {fps:.2f}")
     title.set_text(f"FPS: {fps:.2f}")
 
