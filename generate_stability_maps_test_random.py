@@ -42,7 +42,7 @@ for device in range(50):
     for realization in range(10):
         x0 = int(np.random.uniform(10, 50))
         y0 = int(np.random.uniform(15, 65))
-        noise_level = np.random.uniform(0.2, 0.5)
+        noise_level = np.random.uniform(0.0, 0.5)
         parameters = f"diag1_{diag1}_diag2_{diag2}_hor_{hor}_width_{blur}_noise_{int(noise_level*1000)}_x0_{x0}_y0_{y0}"
         # x0 = 20  # position of the first diamond along VP1
         # y0 = 50  # position of the first diamond along VP2
@@ -80,31 +80,39 @@ for device in range(50):
 
         # plt.figure()
         diamond_counter = 0
-        for region in regions:
-            bit_map1 = np.zeros((len(VP1), len(VP2)))
-            line_counter = 0
-            label = labels[diamond_counter]
-            diamond_counter += 1
-            for line in region:
-                line_counter += 1
-                start, end, slope = line
-                for i in range(len(VP1)):
-                    for j in range(len(VP2)):
-                        if min(start[0], end[0]) <= VP1[i] <= max(start[0], end[0]) and min(start[1], end[1]) <= VP2[
-                            j] <= max(start[1], end[1]):
-                            if np.isclose(VP1[i], start[0] + int(slope * (VP2[j] - start[1]))) or slope == 0:
-                                stability_map[i][j] = 1
-                                bit_map[i][j] = 1
-                                if line_counter < len(region):
-                                    bit_map1[i][j] = 1
+        with open(f"training_dataset_2/device_{device}_realization_{realization}_{parameters}.txt", "w") as txt_file:
+            for region in regions:
+                bit_map1 = np.zeros((len(VP1), len(VP2)))
+                line_counter = 0
+                label = labels[diamond_counter]
+                diamond_counter += 1
+                for line in region:
+                    line_counter += 1
+                    start, end, slope = line
+                    for i in range(len(VP1)):
+                        for j in range(len(VP2)):
+                            if min(start[0], end[0]) <= VP1[i] <= max(start[0], end[0]) and min(start[1], end[1]) <= VP2[
+                                j] <= max(start[1], end[1]):
+                                if np.isclose(VP1[i], start[0] + int(slope * (VP2[j] - start[1]))) or slope == 0:
+                                    stability_map[i][j] = 1
+                                    bit_map[i][j] = 1
+                                    if line_counter < len(region):
+                                        bit_map1[i][j] = 1
 
-            if len(np.where(np.concatenate(bit_map1)>0)[0]) > 0:
-                plt.figure()
-                plt.pcolor(bit_map1)
-                plt.axis("equal")
-                plt.axis('off')
-                plt.savefig(f"./training_dataset/{parameters}_bitmap_{label[2][1]}_{label[2][3]}")
-                plt.close()
+                if len(np.where(np.concatenate(bit_map1)>0)[0]) > 0:
+                    segments = []
+                    Y, X = np.where(bit_map1 == 1)
+                    for coor in range(len(X)):
+                        segments.append((X[coor], Y[coor]))
+                    txt_file.write('[')
+                    txt_file.write(', '.join(str(s) for s in segments))
+                    txt_file.write(']\n')
+                # plt.figure()
+                # plt.pcolor(bit_map1)
+                # plt.axis("equal")
+                # plt.axis('off')
+                # plt.savefig(f"./training_dataset_2/{parameters}_bitmap_{label[2][1]}_{label[2][3]}")
+                # plt.close()
 
         # Broaden the lines and add noise to each mixel
         for i in range(len(VP1)):
@@ -113,12 +121,12 @@ for device in range(50):
                     for ii in range(0,blur):
                         for jj in range(0,blur):
                             if ii+jj == 0:
-                                stability_map[i+ii][j+jj] = 1/np.sqrt(blur+1)
+                                stability_map[i+ii][j+jj] = 1
                             else:
-                                stability_map[i+ii][j+jj] = 1-1/np.sqrt((0.1+ii+jj))
-                                stability_map[i-ii][j-jj] = 1-1/np.sqrt((0.1+ii+jj))
-                                stability_map[i+ii][j-jj] = 1-1/np.sqrt((0.1+ii+jj))
-                                stability_map[i-ii][j+jj] = 1-1/np.sqrt((0.1+ii+jj))
+                                stability_map[i+ii][j+jj] = 1-(ii+jj)/4
+                                stability_map[i-ii][j-jj] = 1-(ii+jj)/4
+                                stability_map[i+ii][j-jj] = 1-(ii+jj)/4
+                                stability_map[i-ii][j+jj] = 1-(ii+jj)/4
                             noise = np.random.normal(0, noise_level, 1)[0]
                             stability_map[i][j] += noise
                 else:
@@ -128,7 +136,7 @@ for device in range(50):
         plt.pcolor(stability_map)
         plt.axis("equal")
         plt.axis('off')
-        plt.savefig(f"./training_dataset/{parameters}_image")
+        plt.savefig(f"./training_dataset_2/device_{device}_realization_{realization}_{parameters}.png")
         plt.close()
 
 
@@ -147,7 +155,7 @@ for device in range(50):
             if VP2[-1] > ll[1] > VP2[0] and VP1[0] < ll[0] < VP1[-1]:
                 plt.text(ll[1], ll[0], ll[2], bbox=dict(facecolor='red', alpha=0.5))
                 plt.plot(ll[1], ll[0], "r*")
-        plt.savefig(f"./training_dataset/{parameters}_full_image.jpeg")
+        plt.savefig(f"./training_dataset_2/device_{device}_realization_{realization}_{parameters}_full_image.png")
         plt.close()
         print(f"elapsed time: {time.time()-start_time:.0f}s")
 
